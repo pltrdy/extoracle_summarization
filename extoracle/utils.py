@@ -4,6 +4,7 @@ Code from:
 under:
       Apache License 2.0
 """
+import math
 import rouge
 from rouge.rouge_score import _get_word_ngrams, rouge_n, Ngrams
 
@@ -14,7 +15,7 @@ def _rouge_clean(s):
 
 
 def greedy_selection(doc_sent_list, abstract_sent_list,
-                     summary_size, exclusive_ngrams=True):
+                     summary_size, exclusive_ngrams=False):
     """Greedy ext-oracle on lists of sentences
 
     Args:
@@ -65,7 +66,7 @@ def greedy_selection(doc_sent_list, abstract_sent_list,
 
 
 def combination_selection(doc_sent_list, abstract_sent_list, summary_size,
-                          exlusive_ngrams=True):
+                          exclusive_ngrams=False):
     """Combination ext-oracle on lists of sentences
 
     Args:
@@ -76,8 +77,10 @@ def combination_selection(doc_sent_list, abstract_sent_list, summary_size,
     Returns:
         selected(list): list of selected sentences
     """
+    import itertools
+
     def _get_word_ngrams(n, sentences):
-        return rouge.rouge_score._get_word_ngrams(
+        return rouge.rouge_score._get_ngrams(
             n, sentences, exclusive=exclusive_ngrams)
 
     max_rouge = 0.0
@@ -85,13 +88,15 @@ def combination_selection(doc_sent_list, abstract_sent_list, summary_size,
     abstract = sum(abstract_sent_list, [])
     abstract = _rouge_clean(' '.join(abstract)).split()
     sents = [_rouge_clean(' '.join(s)).split() for s in doc_sent_list]
-    evaluated_1grams = [_get_word_ngrams(1, [sent]) for sent in sents]
-    reference_1grams = _get_word_ngrams(1, [abstract])
-    evaluated_2grams = [_get_word_ngrams(2, [sent]) for sent in sents]
-    reference_2grams = _get_word_ngrams(2, [abstract])
+    evaluated_1grams = [_get_word_ngrams(1, sent) for sent in sents]
+    reference_1grams = _get_word_ngrams(1, abstract)
+    evaluated_2grams = [_get_word_ngrams(2, sent) for sent in sents]
+    reference_2grams = _get_word_ngrams(2, abstract)
 
     impossible_sents = []
-    for s in range(summary_size + 1):
+
+    min_summary_size = math.ceil(summary_size/2)
+    for s in range(min_summary_size, summary_size + 1):
         combinations = itertools.combinations(
             [i for i in range(len(sents)) if i not in impossible_sents], s + 1)
         for c in combinations:
@@ -108,7 +113,7 @@ def combination_selection(doc_sent_list, abstract_sent_list, summary_size,
             if rouge_score > max_rouge:
                 max_idx = c
                 max_rouge = rouge_score
-    return sorted(list(max_idx))
+    return sorted(list(max_idx)), sents
 
 
 def cal_rouge(evaluated_ngrams, reference_ngrams):
