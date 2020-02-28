@@ -6,7 +6,7 @@ under:
 """
 import math
 import rouge
-from rouge.rouge_score import _get_word_ngrams, rouge_n, Ngrams
+from rouge.rouge_score import Ngrams
 
 
 def _rouge_clean(s):
@@ -20,7 +20,8 @@ def greedy_selection(doc_sent_list, abstract_sent_list,
 
     Args:
         doc_sent_list(list): list of doc sentences (itself a list of words)
-        abstract_sent_list(list): list of abstract sentences (itself a list of words)
+        abstract_sent_list(list): list of abstract sentences
+                                  (itself a list of words)
         summary_size(int): size of the summary, in sentences
 
     Returns:
@@ -71,7 +72,8 @@ def combination_selection(doc_sent_list, abstract_sent_list, summary_size,
 
     Args:
         doc_sent_list(list): list of doc sentences (itself a list of words)
-        abstract_sent_list(list): list of abstract sentences (itself a list of words)
+        abstract_sent_list(list): list of abstract sentences
+                                  (itself a list of words)
         summary_size(int): size of the summary, in sentences
 
     Returns:
@@ -95,7 +97,7 @@ def combination_selection(doc_sent_list, abstract_sent_list, summary_size,
 
     impossible_sents = []
 
-    min_summary_size = math.ceil(summary_size/2)
+    min_summary_size = math.ceil(summary_size / 2)
     for s in range(min_summary_size, summary_size + 1):
         combinations = itertools.combinations(
             [i for i in range(len(sents)) if i not in impossible_sents], s + 1)

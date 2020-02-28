@@ -10,7 +10,8 @@ def main():
                         help="Path to source file (one example per line)")
     parser.add_argument("target",
                         help="Path to target file (one example per line)")
-    parser.add_argument("-method", "-m", default="greedy", choices=extoracle.METHODS,
+    parser.add_argument("-method", "-m", default="greedy",
+                        choices=extoracle.METHODS,
                         help="""Ext-Oracle method (combination is more
                                 accurate but takes much longer""")
     parser.add_argument("-length", "-l", type=int, default=None,
@@ -22,14 +23,15 @@ def main():
                                 (default: print to stdout""")
     parser.add_argument("-trunc", "-t", default=None, type=int,
                         help="Truncate source to <= `trunc` words")
-
+    parser.add_argument("-n_thread", default=1, type=int)
     args = parser.parse_args()
 
     extoracle.from_files(args.source, args.target, args.method,
                          output=args.output,
                          summary_length=args.length,
                          length_oracle=args.length_oracle,
-                         trunc_src=args.trunc)
+                         trunc_src=args.trunc,
+                         n_thread=args.n_thread)
 
 
 if __name__ == "__main__":

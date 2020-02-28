@@ -1,4 +1,5 @@
 import sys
+import multiprocessing
 import extoracle.utils
 
 METHODS = {
@@ -47,8 +48,29 @@ def split_text(txt, trunc=None):
     return sentences
 
 
+def process_example(example):
+    (method,
+        src_line,
+        tgt_line,
+        trunc_src,
+        summary_length,
+        length_oracle,) = example
+
+    src_line = _clean_line(src_line)
+    tgt_line = _clean_line(tgt_line)
+
+    src_sentences = split_text(src_line, trunc=trunc_src)
+    tgt_sentences = split_text(tgt_line)
+
+    if length_oracle:
+        summary_length = len(tgt_sentences)
+
+    ids, sents = method(src_sentences, tgt_sentences, summary_length)
+    return ids, sents
+
+
 def from_files(src_path, tgt_path, method, output=None, summary_length=None,
-               length_oracle=False, trunc_src=None):
+               length_oracle=False, trunc_src=None, n_thread=1):
     if method in METHODS:
         method = METHODS[method]
     else:
@@ -57,7 +79,8 @@ def from_files(src_path, tgt_path, method, output=None, summary_length=None,
 
     if summary_length is None and not length_oracle:
         raise ValueError(
-            "Argument [summary_length, length_oracle] cannot be both None/False")
+            "Argument [summary_length, length_oracle] "
+            + "cannot be both None/False")
     if summary_length is not None and length_oracle:
         raise ValueError(
             "Arguments [summary_length, length_oracle] are incompatible")
@@ -68,15 +91,23 @@ def from_files(src_path, tgt_path, method, output=None, summary_length=None,
         out = sys.stdout
     else:
         out = open(output, 'w')
-    for src_line, tgt_line in zip(src, tgt):
-        src_line = _clean_line(src_line)
-        tgt_line = _clean_line(tgt_line)
 
-        src_sentences = split_text(src_line, trunc=trunc_src)
-        tgt_sentences = split_text(tgt_line)
+    def example_generator():
+        for src_line, tgt_line in zip(src, tgt):
+            example = (
+                method,
+                src_line,
+                tgt_line,
+                trunc_src,
+                summary_length,
+                length_oracle,
+            )
+            yield example
 
-        if length_oracle:
-            summary_length = len(tgt_sentences)
+    with multiprocessing.Pool(n_thread) as p:
+        result_iterator = p.imap(process_example, example_generator())
 
-        ids, sents = method(src_sentences, tgt_sentences, summary_length)
-        print(" ".join([" ".join(sents[i]) for i in ids]), file=out)
+        for result in result_iterator:
+            ids, sents = result
+            print(" ".join([" ".join(sents[i]) for i in ids]), file=out)
+            out.flush()
