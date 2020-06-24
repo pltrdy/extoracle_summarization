@@ -27,4 +27,3 @@ Ext-Oracle Summarization: error: the following arguments are required: source, t
 ## References
 * Paper: Ext-Oracle is discussed, and measured again summarization datasets in [Narayan (2018)](https://arxiv.org/abs/1808.08745)
 * Code: this repository uses code from [nlpyang/BertSum](https://github.com/nlpyang/BertSum) (Apache 2.0).
->>>>>>> adding files
